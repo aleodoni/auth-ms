@@ -7,6 +7,7 @@ import {
   RmqContext,
   RpcException,
 } from '@nestjs/microservices';
+import { JwtService } from '@nestjs/jwt';
 import { UserService } from 'src/user/user.service';
 import { AuthService } from './auth.service';
 import { Credentials } from './interfaces/credentials.interface';
@@ -18,6 +19,7 @@ export class AuthController {
   constructor(
     private readonly userService: UserService,
     private readonly authService: AuthService,
+    private readonly jwtService: JwtService,
   ) {}
 
   @MessagePattern('authenticate')
@@ -43,6 +45,7 @@ export class AuthController {
             email: user.mail,
             name: user.givenName,
             surname: user.sn,
+            cpf: user.employeeNumber,
           },
         });
       } else {
@@ -51,10 +54,19 @@ export class AuthController {
           email: user.mail,
           name: user.givenName,
           surname: user.sn,
+          cpf: user.employeeNumber,
         });
       }
 
-      return updatedUser;
+      const payload = {
+        username: updatedUser.username,
+        sub: updatedUser.cpf,
+      };
+
+      return {
+        ...updatedUser,
+        token: this.jwtService.sign(payload),
+      };
     } catch (err) {
       throw new RpcException(err);
     } finally {
