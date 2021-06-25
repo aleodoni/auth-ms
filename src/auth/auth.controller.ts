@@ -11,6 +11,8 @@ import { JwtService } from '@nestjs/jwt';
 import { UserService } from 'src/user/user.service';
 import { AuthService } from './auth.service';
 import { Credentials } from './interfaces/credentials.interface';
+import { UserLdap } from './interfaces/user-ldap.interface';
+import { UserToken } from './interfaces/user-token.interface';
 
 @Controller('auth')
 export class AuthController {
@@ -26,12 +28,12 @@ export class AuthController {
   async authenticate(
     @Payload() credentials: Credentials,
     @Ctx() context: RmqContext,
-  ) {
+  ): Promise<UserToken> {
     const channel = context.getChannelRef();
     const originalMsg = context.getMessage();
 
     try {
-      const user = await this.authService.getLDAPUser(credentials);
+      const user: UserLdap = await this.authService.getLDAPUser(credentials);
 
       const userBd = await this.userService.getUserByUsername(user.uid);
 
@@ -60,13 +62,33 @@ export class AuthController {
 
       const payload = {
         username: updatedUser.username,
-        sub: updatedUser.cpf,
+        cpf: updatedUser.cpf,
+        id: updatedUser.id,
       };
 
       return {
-        ...updatedUser,
-        token: this.jwtService.sign(payload),
+        user: updatedUser,
+        access_token: this.jwtService.sign(payload),
       };
+    } catch (err) {
+      throw new RpcException(err);
+    } finally {
+      await channel.ack(originalMsg);
+    }
+  }
+
+  @MessagePattern('validate')
+  async validate(
+    @Payload() token: string,
+    @Ctx() context: RmqContext,
+  ): Promise<boolean> {
+    const channel = context.getChannelRef();
+    const originalMsg = context.getMessage();
+
+    try {
+      const tokenValid = this.authService.validateToken(token);
+
+      return tokenValid;
     } catch (err) {
       throw new RpcException(err);
     } finally {
