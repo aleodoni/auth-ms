@@ -33,13 +33,17 @@ export class AuthController {
     const originalMsg = context.getMessage();
 
     try {
+      this.logger.log('---------------1');
       const user: UserLdap = await this.authService.getLDAPUser(credentials);
 
+      this.logger.log('---------------2');
       const userBd = await this.userService.getUserByUsername(user.uid);
 
+      this.logger.log('---------------3');
       let updatedUser: User;
 
       if (userBd) {
+        this.logger.log('---------------4');
         updatedUser = await this.userService.updateUser({
           where: { username: user.uid },
           data: {
@@ -51,6 +55,7 @@ export class AuthController {
           },
         });
       } else {
+        this.logger.log('---------------5');
         updatedUser = await this.userService.createUser({
           username: user.uid,
           email: user.mail,
@@ -71,6 +76,8 @@ export class AuthController {
         access_token: this.jwtService.sign(payload),
       };
     } catch (err) {
+      this.logger.log('---------------ERRO');
+      this.logger.log(err);
       throw new RpcException(err);
     } finally {
       await channel.ack(originalMsg);
