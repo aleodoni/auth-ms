@@ -51,6 +51,7 @@ export class AuthService {
       this.logger.log(`binding user: ${username}, password: ${password}`);
       this.logger.log(`uid=${username},${base}`);
       await client.bind(`uid=${username},${base}`, password);
+      this.logger.log('USER BINDED SUCCESSFULLY');
     } catch (err) {
       this.logger.log('ERRO bindUser');
       console.log(err);
@@ -67,9 +68,18 @@ export class AuthService {
     const baseBind = this.configService.get<string>('LDAP_BIND_BASE');
     const searchUser = this.configService.get<string>('LDAP_SEARCH_USER');
     const searchPass = this.configService.get<string>('LDAP_SEARCH_PASS');
+    const bindPrefix = this.configService.get<string>('LDAP_BIND_PREFIX');
 
     try {
-      await client.bind(`cn=${searchUser},${baseBind}`, searchPass);
+      this.logger.log(
+        `searchUser : ${
+          bindPrefix ? `${bindPrefix}=` : ''
+        }${searchUser},${baseBind}`,
+      );
+      await client.bind(
+        `${bindPrefix ? `${bindPrefix}=` : ''}${searchUser},${baseBind}`,
+        searchPass,
+      );
 
       const entry = await client.search(base, {
         scope: 'sub',
