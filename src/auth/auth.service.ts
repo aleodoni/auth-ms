@@ -48,8 +48,12 @@ export class AuthService {
     const base = this.configService.get<string>('LDAP_SEARCH_BASE');
 
     try {
+      this.logger.log(`binding user: ${username}, password: ${password}`);
+      this.logger.log(`uid=${username},${base}`);
       await client.bind(`uid=${username},${base}`, password);
     } catch (err) {
+      this.logger.log('ERRO bindUser');
+      console.log(err);
       this.logger.error(err);
       throw new RpcException('Invalid Credentials');
     }
