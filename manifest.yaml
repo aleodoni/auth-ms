@@ -1,0 +1,8 @@
+applications:
+  - name: auth-ms
+    path: dist
+    instances: 1
+    memory: 128MB
+    disk_quota: 1GB
+    command: node main
+    health_check-type: none
